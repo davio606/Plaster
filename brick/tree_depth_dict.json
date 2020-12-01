@@ -1,0 +1,10 @@
+{
+  "sensor": 1,
+  "alarm": 1,
+  "status": 1,
+  "setpoint": 1,
+  "command": 1,
+  "meter": 1,
+  "equipment": 1,
+  "location": 1
+}
