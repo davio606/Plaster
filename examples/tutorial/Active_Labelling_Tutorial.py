@@ -62,12 +62,12 @@ ActiveLabelling = ActivePartialLabelling(target_building=target_building,
 # You can run it to the end. It will automatically select examples and update the model until it reaches a certain confidence level.
 ActiveLabelling.learn_auto()
 
-ActiveLabelling.predict_proba(target_srcids, output_format="ttl")
-print("DONE")
-# Otherwise, you can do it manually, step by step.
-# selected_samples = zodiac.select_informative_samples(5)
-# zodiac.update_model(selected_samples)
+print(ActiveLabelling.predict_proba(target_srcids, output_format="ttl"))
 
-#pred_g, proba = zodiac.predict_proba(target_srcids, output_format='ttl')
-#pred_g.g.serialize('result/zodiac_inferred_graph.jsonld', format='json-ld')
-#pred_g.g.serialize('result/zodiac_inferred_graph.ttl', format='turtle')
+ActiveLabelling.save_model('test_model2.obj')
+
+print("Saved")
+load_crf = ActiveLabelling.load_model('test_model2.obj')
+print("Model Loaded:")
+ActiveLabelling.crf = load_crf
+ActiveLabelling.learn_auto()

@@ -276,6 +276,12 @@ class ActivePartialLabelling(object):
     def predict(self, target_srcids=None, output_format='ttl', *args, **kwargs):  
         return self.crf.predict(target_srcids)
 
+    def save_model(self, filename):
+        filehandler = open(filename, 'wb')
+        pickle.dump(self.crf, filehandler)
+    def load_model(self,filename):
+        filehandler = open(filename, 'rb')
+        return pickle.load(filehandler)
 
 # CRF
 class CrfModel(object):
@@ -418,59 +424,5 @@ def string_vectorize(Xs_list):
     vec = vc.transform(name).toarray()
     dictionary = vc.get_feature_names()
     return vec, dictionary
-
-# ========================= experiment setting =============================
-
-
-
-# ========================== pretrain and precompute ================================
-
-""" # load data
-data = BuildDataLoader(DATA_PATH)
-data.shuffle(8)
-pretrain_list = data.sequence[:PRETRAIN_SIZE]
-test_list = data.sequence[-TEST_SIZE:]
-validation_list = data.sequence[-TEST_SIZE - VALIDATE_SIZE : TEST_SIZE]
-candidate_list  = data.sequence[PRETRAIN_SIZE : PRETRAIN_SIZE + CANDIDATE_SIZE]
-print ("=== data setup ===")
-print ("pretrain  : {}".format(len(pretrain_list)))
-print ("candidate : {}".format(len(candidate_list)))
-print ("validation: {}".format(len(validation_list)))
-print ("test      : {}".format(len(test_list)))
-
-# pretrain CRF with #CRF_PRETRAIN_SIZE instances
-crf = CrfModel(data)
-crf.add_instances(pretrain_list)
-crf.train()
-
-count = sum([len(seq[1]) for seq in pretrain_list]) 
-cost_list = [count]
-
-(in_acc, out_acc, all_acc) = crf.evaluate_acc(test_list)
-in_acc_list = [in_acc]
-out_acc_list = [out_acc]
-all_acc_list = [all_acc]
-
-# precompute: vectorized and clustered test set.
-Xs = [seq[0] for seq in validation_list]
-Xs.extend([seq[0] for seq in candidate_list])
-vec, _ = string_vectorize(Xs)
-validation_vec = vec[:len(validation_list)].tolist()
-candidate_vec = vec[len(validation_list):].tolist()
-
-# Pre-calculate similarity: both between validation-test and validation-validate
-sim_matrix_test = np.zeros((len(candidate_vec), len(validation_vec)))
-sim_matrix_self = np.zeros((len(candidate_vec), len(candidate_vec)))
-
-iterator = tqdm(range(len(candidate_vec)))
-iterator = tqdm(range(len(candidate_vec)))
-for i in iterator:
-    for j in range(len(validation_vec)):
-        sim_matrix_test[i, j] = 1 - scipy.spatial.distance.cosine(candidate_vec[i], validation_vec[j]) # cosine distance is 1-cosine(a,b)
-    for j in range(len(candidate_vec)):
-        sim_matrix_self[i, j] = 1 - scipy.spatial.distance.cosine(candidate_vec[i], candidate_vec[j])
-iterator.close()
-print ('Similarity done!') """
-
 
 
