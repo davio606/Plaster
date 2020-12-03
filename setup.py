@@ -15,7 +15,7 @@ setup(
     author = __author__,
     version = __version__,
     packages = find_packages() + ['config'],
-    description = '[Plastering](https://github.com/plastering/plastering)',
+    description = '[Plastering](https://github.com/davio606/Plaster)',
     install_requires = reqs,
     #package_data = {
     #    'config': ['config/unit_mapping.csv', 'config/bacnettype_mapping.csv'],
