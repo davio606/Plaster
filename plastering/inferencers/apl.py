@@ -111,11 +111,11 @@ class ActivePartialLabelling(object):
         self.test_list = data.sequence[-self.TEST_SIZE:]
         self.validation_list = data.sequence[-self.TEST_SIZE - self.VALIDATE_SIZE : self.TEST_SIZE]
         self.candidate_list  = data.sequence[self.PRETRAIN_SIZE : self.PRETRAIN_SIZE + self.CANDIDATE_SIZE]
-        print ("=== data setup ===")
-        print ("pretrain  : {}".format(len(self.pretrain_list)))
-        print ("candidate : {}".format(len(self.candidate_list)))
-        print ("validation: {}".format(len(self.validation_list)))
-        print ("test      : {}".format(len(self.test_list)))
+        # print ("=== data setup ===")
+        # print ("pretrain  : {}".format(len(self.pretrain_list)))
+        # print ("candidate : {}".format(len(self.candidate_list)))
+        # print ("validation: {}".format(len(self.validation_list)))
+        # print ("test      : {}".format(len(self.test_list)))
 
         # create a crf model that we will use
         self.crf = CrfModel(data)
@@ -242,9 +242,9 @@ class ActivePartialLabelling(object):
                 self.count += len(query_seq[1])
             self.cost_list.append(self.count)
 
-            self.crf.add_instances([query_seq])
-            self.crf.train()
-            # TODO: self.update_model([query_seq])
+            #self.crf.add_instances([query_seq])
+            #self.crf.train()
+            self.update_model([query_seq])
             (in_acc, out_acc, all_acc) =self.crf.evaluate_acc(self.validation_list)
             self.in_acc_list.append(in_acc)
             self.out_acc_list.append(out_acc)
@@ -259,14 +259,13 @@ class ActivePartialLabelling(object):
         print("OUT_ACC_LIST: ", self.out_acc_list)
         print("ALL_ACC_LIST: ", self.all_acc_list)
 
-    def update_model(self, new_srcids, *args, **kwargs):
+    def update_model(self, new_srcids):
         self.crf.add_instances(new_srcids)
         self.crf.train()
 
     # ESSENTIAL
     def predict_proba(self, target_srcids=None, output_format='ttl', *args, **kwargs):
         res = self.predict(target_srcids, output_format)
-        print("YO: ", res)
         return res
 
     # ESSENTIAL
