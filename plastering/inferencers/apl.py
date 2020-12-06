@@ -44,7 +44,6 @@ class BuildDataLoader:
         for srcid, doc in data.items():
             if(doc['fullparsing'].get('BACnetName') == None or len(doc['fullparsing'].get('BACnetName')) == 0):
                 continue
-            #print(srcid, " ", doc['fullparsing'].get('BACnetName'))
             current_data = doc['fullparsing'].get('BACnetName')
             x = []
             y = []
@@ -62,8 +61,70 @@ class BuildDataLoader:
         random.Random(4).shuffle(self.sequence)
 
 # class ActivePartialLabelling(Inferencer):
-@Inferencer()
-class ActivePartialLabelling(object):
+class ActivePartialLabelling(Inferencer):
+    def __init__(self, source, budget, method, strategy, window, cflag, testM, beta, tune):
+
+        SOURCE = source
+        # Arguments might have to be changed here
+        DATA_PATH = SOURCE
+        self.PRETRAIN_SIZE = 15
+        self.CANDIDATE_SIZE = 600
+        self.VALIDATE_SIZE = 200
+        self.TEST_SIZE = 200
+        self.BUDGET = budget
+
+        #inductive or transductive labeling
+        self.M = testM
+        self.BETA = beta
+        self.METHOD = method #choice: none, selfSim, testSim
+        #fully or partial labeling
+        self.SUBSEQ_FLAG = True if cflag == 1 else False
+        self.SUBSEQ_SIZE = window
+        self.STRATEGY = strategy #choice: fully, partial
+        self.NORM = True if tune == 'norm' else False
+
+        # Load Data, could be a different method possibly
+        data = BuildDataLoader(DATA_PATH)
+        data.shuffle(8)
+        self.pretrain_list = data.sequence[:self.PRETRAIN_SIZE]
+        self.test_list = data.sequence[-self.TEST_SIZE:]
+        self.validation_list = data.sequence[-self.TEST_SIZE - self.VALIDATE_SIZE : self.TEST_SIZE]
+        self.candidate_list  = data.sequence[self.PRETRAIN_SIZE : self.PRETRAIN_SIZE + self.CANDIDATE_SIZE]
+
+        # create a crf model that we will use
+        self.crf = CrfModel(data)
+        self.crf.add_instances(self.pretrain_list)
+        self.crf.train()
+
+        self.count = sum([len(seq[1]) for seq in self.pretrain_list]) 
+        self.cost_list = [self.count]
+
+        (in_acc, out_acc, all_acc) = self.crf.evaluate_acc(self.test_list)
+        self.in_acc_list = [in_acc]
+        self.out_acc_list = [out_acc]
+        self.all_acc_list = [all_acc]
+
+        # precompute: vectorized and clustered test set.
+        Xs = [seq[0] for seq in self.validation_list]
+        Xs.extend([seq[0] for seq in self.candidate_list])
+        vec, _ = string_vectorize(Xs)
+        validation_vec = vec[:len(self.validation_list)].tolist()
+        candidate_vec = vec[len(self.validation_list):].tolist()
+
+        # Pre-calculate similarity: both between validation-test and validation-validate
+        sim_matrix_test = np.zeros((len(candidate_vec), len(validation_vec)))
+        sim_matrix_self = np.zeros((len(candidate_vec), len(candidate_vec)))
+
+        iterator = tqdm(range(len(candidate_vec)))
+        iterator = tqdm(range(len(candidate_vec)))
+        for i in iterator:
+            for j in range(len(validation_vec)):
+                sim_matrix_test[i, j] = 1 - scipy.spatial.distance.cosine(candidate_vec[i], validation_vec[j]) # cosine distance is 1-cosine(a,b)
+            for j in range(len(candidate_vec)):
+                sim_matrix_self[i, j] = 1 - scipy.spatial.distance.cosine(candidate_vec[i], candidate_vec[j])
+        iterator.close()
+        print ('Similarity done!')
+    #second constructor
     def __init__(self,
                  target_building,
                  target_srcids,
@@ -87,7 +148,6 @@ class ActivePartialLabelling(object):
         SOURCE = args.source
         # Arguments might have to be changed here
         DATA_PATH = SOURCE
-        print("Current Source:", DATA_PATH)
         self.PRETRAIN_SIZE = 15
         self.CANDIDATE_SIZE = 600
         self.VALIDATE_SIZE = 200
@@ -111,11 +171,6 @@ class ActivePartialLabelling(object):
         self.test_list = data.sequence[-self.TEST_SIZE:]
         self.validation_list = data.sequence[-self.TEST_SIZE - self.VALIDATE_SIZE : self.TEST_SIZE]
         self.candidate_list  = data.sequence[self.PRETRAIN_SIZE : self.PRETRAIN_SIZE + self.CANDIDATE_SIZE]
-        # print ("=== data setup ===")
-        # print ("pretrain  : {}".format(len(self.pretrain_list)))
-        # print ("candidate : {}".format(len(self.candidate_list)))
-        # print ("validation: {}".format(len(self.validation_list)))
-        # print ("test      : {}".format(len(self.test_list)))
 
         # create a crf model that we will use
         self.crf = CrfModel(data)
@@ -242,8 +297,6 @@ class ActivePartialLabelling(object):
                 self.count += len(query_seq[1])
             self.cost_list.append(self.count)
 
-            #self.crf.add_instances([query_seq])
-            #self.crf.train()
             self.update_model([query_seq])
             (in_acc, out_acc, all_acc) =self.crf.evaluate_acc(self.validation_list)
             self.in_acc_list.append(in_acc)
